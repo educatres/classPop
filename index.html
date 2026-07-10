@@ -43,7 +43,10 @@
       <div class="setup-layout">
         <form id="setup-form" class="panel">
           <div class="section-title">
-            <h2>課堂設定</h2>
+            <div>
+              <p class="eyebrow">Step 1</p>
+              <h2>貼上 Google 設定</h2>
+            </div>
             <button class="ghost-btn" type="button" id="reset-class-id">重產 class_id</button>
           </div>
 
@@ -71,6 +74,13 @@
             </label>
           </div>
 
+          <div class="section-title compact">
+            <div>
+              <p class="eyebrow">Step 2</p>
+              <h2>自動帶入 entry ID</h2>
+            </div>
+          </div>
+
           <details class="helper">
             <summary>從 Google Form 預填連結解析 entry ID</summary>
             <p>在 Google Form 建立預填連結時，把每個欄位填成欄位名稱，例如 class_id、event_type、question_id，再把預填連結貼到下方解析。</p>
@@ -92,21 +102,50 @@
           </div>
         </form>
 
-        <aside id="result-panel" class="panel result-panel hidden">
-          <h2>連結與 QR Code</h2>
-          <label>
-            <span>老師主持頁</span>
-            <input id="host-link" readonly>
-          </label>
-          <button class="ghost-btn full" type="button" id="copy-host">複製主持頁連結</button>
-          <label>
-            <span>學生作答頁</span>
-            <input id="play-link" readonly>
-          </label>
-          <button class="ghost-btn full" type="button" id="copy-play">複製學生作答連結</button>
-          <div id="qr-code" class="qr-box"></div>
+        <aside class="panel guide-panel">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">快速教學</p>
+              <h2>老師準備方式</h2>
+            </div>
+          </div>
+          <ol class="guide-list">
+            <li>建立 Google Form，欄位名稱依照上方「Google Form 欄位設定」建立，欄位型態可用簡答或段落。</li>
+            <li>將 Google Form 回應連結到 Google Sheet，並把 Sheet 設為「知道連結的人可以檢視」。</li>
+            <li>複製 Google Sheet ID，填入左側 Step 1；Sheet 名稱通常是 <code>表單回應 1</code>，也可以改填 gid。</li>
+            <li>Google Form submit URL 請使用 <code>/formResponse</code> 結尾的送出網址；貼上 <code>/viewform</code> 或 <code>/edit</code> 也會自動轉換。</li>
+            <li>在 Google Form 選「取得預填連結」，每題填入對應欄位名稱，再貼回 Step 2 自動帶入 entry ID。</li>
+            <li>按「產生連結」後，開啟主持頁，學生掃 QR Code 進入作答頁。</li>
+          </ol>
         </aside>
       </div>
+
+      <section id="result-panel" class="panel result-panel hidden" aria-live="polite">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Step 3</p>
+            <h2>分享課堂</h2>
+          </div>
+        </div>
+        <div class="result-layout">
+          <div>
+            <label>
+              <span>老師主持頁</span>
+              <input id="host-link" readonly>
+            </label>
+            <button class="ghost-btn full" type="button" id="copy-host">複製主持頁連結</button>
+            <label>
+              <span>學生作答頁</span>
+              <input id="play-link" readonly>
+            </label>
+            <button class="ghost-btn full" type="button" id="copy-play">複製學生作答連結</button>
+          </div>
+          <div class="qr-wrap">
+            <div id="qr-code" class="qr-box"></div>
+            <p>學生掃描後即可進入匿名作答頁。</p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>

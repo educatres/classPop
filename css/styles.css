@@ -176,6 +176,63 @@ h2 {
   justify-content: space-between;
 }
 
+.section-title.compact {
+  margin-top: 24px;
+}
+
+.guide-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding-left: 24px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.guide-list li::marker {
+  color: var(--accent-dark);
+  font-weight: 900;
+}
+
+.guide-list code,
+.helper code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #eef3ff;
+  color: var(--accent-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  font-weight: 800;
+}
+
+.result-panel {
+  margin-top: 20px;
+}
+
+.result-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 22px;
+  align-items: start;
+}
+
+.qr-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.qr-wrap .qr-box {
+  margin: 0;
+}
+
+.qr-wrap p {
+  margin: 0;
+  line-height: 1.6;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -543,6 +600,7 @@ textarea:focus {
   .setup-layout,
   .host-grid,
   .form-guide,
+  .result-layout,
   .stats-panel {
     display: block;
   }
