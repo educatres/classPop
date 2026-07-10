@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClassPop 主持頁</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <div id="config-error" class="error-panel hidden"></div>
+
+    <main id="host-app" class="shell host-shell hidden">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">ClassPop Host</p>
+          <h1>課堂主持頁</h1>
+          <p>課堂 ID：<strong id="class-id"></strong></p>
+        </div>
+        <div class="sync-tools">
+          <button id="manual-sync" class="ghost-btn" type="button">重新整理</button>
+          <span id="sync-status" class="status-text"></span>
+        </div>
+      </header>
+
+      <section class="invite-band">
+        <div id="qr-code" class="qr-box compact"></div>
+        <label>
+          <span>學生作答連結</span>
+          <input id="play-link" readonly>
+        </label>
+        <button id="copy-play" class="primary-btn" type="button">複製連結</button>
+      </section>
+
+      <div class="host-grid">
+        <section class="panel">
+          <div class="section-title">
+            <h2>題目編輯</h2>
+            <button id="next-question" class="ghost-btn" type="button">下一題</button>
+          </div>
+
+          <form id="question-form">
+            <label>
+              <span>題目文字</span>
+              <textarea name="question_text" rows="4" required></textarea>
+            </label>
+            <div class="two-col">
+              <label><span>A 選項</span><input name="option_a" required></label>
+              <label><span>B 選項</span><input name="option_b" required></label>
+              <label><span>C 選項</span><input name="option_c" required></label>
+              <label><span>D 選項</span><input name="option_d" required></label>
+            </div>
+            <fieldset class="answer-radios">
+              <legend>正確答案</legend>
+              <label><input type="radio" name="correct_answer" value="A" checked> A</label>
+              <label><input type="radio" name="correct_answer" value="B"> B</label>
+              <label><input type="radio" name="correct_answer" value="C"> C</label>
+              <label><input type="radio" name="correct_answer" value="D"> D</label>
+            </fieldset>
+            <div class="actions">
+              <button class="primary-btn" type="submit">建立題目</button>
+              <button id="open-question" class="ghost-btn" type="button">開放作答</button>
+              <button id="close-question" class="ghost-btn" type="button">關閉作答</button>
+              <button id="reveal-answer" class="ghost-btn" type="button">公布答案</button>
+              <button id="reset-question" class="ghost-btn" type="button">重設本題</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel projection">
+          <div class="status-line">
+            <span id="question-status" class="status-pill">等待題目</span>
+            <span>已作答 <strong id="answer-count">0</strong> 人</span>
+          </div>
+          <h2 id="project-question">目前尚未建立題目</h2>
+          <div id="option-list" class="option-list"></div>
+        </section>
+
+        <section class="panel stats-panel">
+          <h2>作答統計</h2>
+          <div class="stat-cards">
+            <div><span>總作答</span><strong id="total-answers">0</strong></div>
+            <div><span>答對</span><strong id="correct-count">0</strong></div>
+            <div><span>答錯</span><strong id="wrong-count">0</strong></div>
+            <div><span>答對率</span><strong id="correct-rate">0%</strong></div>
+          </div>
+          <div id="stats-bars" class="stats-bars"></div>
+        </section>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script type="module" src="js/host.js"></script>
+  </body>
+</html>

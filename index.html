@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClassPop 設定</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="page-head">
+        <p class="eyebrow">ClassPop</p>
+        <h1>上課即時回答系統</h1>
+        <p>輸入 Google Form 與 Google Sheet 設定，產生主持頁、學生作答頁與 QR Code。</p>
+      </header>
+
+      <section class="notice">
+        請勿要求學生輸入姓名、學號、Email 或其他個資。公開試算表知道連結的人可能讀取資料，本系統不適合正式考試。
+      </section>
+
+      <div class="setup-layout">
+        <form id="setup-form" class="panel">
+          <div class="section-title">
+            <h2>課堂設定</h2>
+            <button class="ghost-btn" type="button" id="reset-class-id">重產 class_id</button>
+          </div>
+
+          <label>
+            <span>class_id <b>*</b></span>
+            <input id="class-id" name="class_id" autocomplete="off">
+          </label>
+
+          <div class="two-col">
+            <label>
+              <span>Google Sheet ID <b>*</b></span>
+              <input name="sheet_id" autocomplete="off" required>
+            </label>
+            <label>
+              <span>Google Form submit URL <b>*</b></span>
+              <input name="form_url" autocomplete="off" required placeholder=".../formResponse">
+            </label>
+            <label>
+              <span>Sheet 名稱</span>
+              <input name="sheet_name" autocomplete="off" placeholder="表單回應 1">
+            </label>
+            <label>
+              <span>gid</span>
+              <input name="gid" autocomplete="off" placeholder="使用 CSV 讀取時填寫">
+            </label>
+          </div>
+
+          <details class="helper">
+            <summary>從 Google Form 預填連結解析 entry ID</summary>
+            <p>在 Google Form 建立預填連結時，把每個欄位填成欄位名稱，例如 class_id、event_type、question_id，再把預填連結貼到下方解析。</p>
+            <textarea id="prefill-url" rows="4" placeholder="貼上預填連結"></textarea>
+            <div class="actions">
+              <button class="ghost-btn" type="button" id="fill-markers">顯示欄位名稱</button>
+              <button class="ghost-btn" type="button" id="parse-prefill">解析 entry ID</button>
+            </div>
+          </details>
+
+          <div class="section-title">
+            <h2>欄位對應</h2>
+          </div>
+          <div id="entry-grid" class="entry-grid"></div>
+
+          <div class="actions">
+            <button class="primary-btn" type="submit">產生連結</button>
+            <span id="setup-status" class="status-text"></span>
+          </div>
+        </form>
+
+        <aside id="result-panel" class="panel result-panel hidden">
+          <h2>連結與 QR Code</h2>
+          <label>
+            <span>老師主持頁</span>
+            <input id="host-link" readonly>
+          </label>
+          <button class="ghost-btn full" type="button" id="copy-host">複製主持頁連結</button>
+          <label>
+            <span>學生作答頁</span>
+            <input id="play-link" readonly>
+          </label>
+          <button class="ghost-btn full" type="button" id="copy-play">複製學生作答連結</button>
+          <div id="qr-code" class="qr-box"></div>
+        </aside>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script type="module" src="js/index.js"></script>
+  </body>
+</html>
