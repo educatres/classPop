@@ -111,6 +111,37 @@ h2 {
   background: #fff8f0;
 }
 
+.form-guide {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+
+.form-guide p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.field-name-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.field-name-list code {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f9fbff;
+  color: var(--accent-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
 .setup-layout,
 .host-grid {
   display: grid;
@@ -511,6 +542,7 @@ textarea:focus {
 @media (max-width: 960px) {
   .setup-layout,
   .host-grid,
+  .form-guide,
   .stats-panel {
     display: block;
   }
