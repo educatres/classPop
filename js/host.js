@@ -29,8 +29,10 @@ function init() {
   app.classList.remove('hidden');
 
   const playUrl = buildPageUrl('play.html', buildUrlValuesFromConfig(config));
+  const statsUrl = buildPageUrl('stats.html', buildUrlValuesFromConfig(config));
   setText('#class-id', config.classId);
   document.querySelector('#play-link').value = playUrl;
+  document.querySelector('#open-stats').href = statsUrl;
   renderQr(document.querySelector('#qr-code'), playUrl, '學生作答 QR Code');
 
   document.querySelector('#copy-play').addEventListener('click', async () => {
