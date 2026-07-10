@@ -1,5 +1,7 @@
 # ClassPop 課堂即時回答系統
 
+![ClassPop 課堂即時回答系統 UI 簡介圖](UI簡介圖.png)
+
 這是一個可部署在 GitHub Pages 的靜態上課回答系統。資料寫入使用 Google Form，資料讀取使用公開 Google Sheet，不需要後端、Apps Script、OAuth 或學生登入。
 
 ## 檔案
@@ -32,3 +34,7 @@
 - Google Form submit URL 外流可能被送入資料。
 - Google Form 寫入 Google Sheet 可能有數秒延遲。
 - 本系統沒有登入與權限控管，不適合正式考試。
+
+## License
+
+MIT
