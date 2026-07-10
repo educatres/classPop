@@ -32,7 +32,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -226,6 +227,16 @@ h2 {
   align-items: center;
 }
 
+.toolbar-field {
+  width: min(360px, 100%);
+  margin: 0;
+  text-align: left;
+}
+
+.toolbar-field span {
+  font-size: 0.82rem;
+}
+
 .section-title {
   justify-content: space-between;
 }
@@ -300,7 +311,8 @@ label b {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -309,7 +321,8 @@ textarea {
   outline: none;
 }
 
-input {
+input,
+select {
   min-height: 46px;
   padding: 0 13px;
 }
@@ -320,7 +333,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(37, 86, 214, 0.14);
 }

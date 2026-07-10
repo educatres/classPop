@@ -10,20 +10,30 @@ const STATUS_BY_EVENT = {
   question_reset: 'created',
 };
 
-export function buildQuizSnapshot(events, classId) {
+export function buildQuizSnapshot(events, classId, selectedQuestionId = '') {
   const classEvents = sortEvents(events.filter((event) => event.class_id === classId && event.event_type !== 'class_reset'));
-  const teacherEvents = classEvents.filter((event) => TEACHER_EVENTS.includes(event.event_type));
-  const latestTeacherEvent = teacherEvents.at(-1);
-  const question = buildQuestionState(latestTeacherEvent);
+  const questions = buildQuestionSnapshotsFromClassEvents(classEvents);
+  const selectedQuestion = selectedQuestionId
+    ? questions.find((item) => item.question.question_id === selectedQuestionId)
+    : null;
+  const latestQuestion = questions.at(-1);
+  const questionSnapshot = selectedQuestion || latestQuestion;
+  const question = questionSnapshot?.question || buildQuestionState(null);
   const answers = buildAnswerStates(classEvents, question.question_id);
   const stats = buildStats(question, answers);
 
   return {
     events: classEvents,
+    questions,
     question,
     answers,
     stats,
   };
+}
+
+export function buildQuestionSnapshots(events, classId) {
+  const classEvents = sortEvents(events.filter((event) => event.class_id === classId && event.event_type !== 'class_reset'));
+  return buildQuestionSnapshotsFromClassEvents(classEvents);
 }
 
 export function sortEvents(events) {
@@ -62,6 +72,28 @@ function buildQuestionState(event) {
     correct_answer: event.correct_answer,
     updated_at: event.client_timestamp || event.timestamp_server || '',
   };
+}
+
+function buildQuestionSnapshotsFromClassEvents(classEvents) {
+  const latestTeacherEventByQuestion = new Map();
+  const teacherEvents = classEvents.filter((event) => (
+    TEACHER_EVENTS.includes(event.event_type)
+    && event.question_id
+  ));
+
+  for (const event of teacherEvents) {
+    latestTeacherEventByQuestion.set(event.question_id, event);
+  }
+
+  return [...latestTeacherEventByQuestion.values()].map((event) => {
+    const question = buildQuestionState(event);
+    const answers = buildAnswerStates(classEvents, question.question_id);
+    return {
+      question,
+      answers,
+      stats: buildStats(question, answers),
+    };
+  });
 }
 
 function buildAnswerStates(events, questionId) {

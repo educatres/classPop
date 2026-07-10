@@ -14,6 +14,7 @@ const form = document.querySelector('#setup-form');
 const resultPanel = document.querySelector('#result-panel');
 const hostLink = document.querySelector('#host-link');
 const playLink = document.querySelector('#play-link');
+const statsLink = document.querySelector('#stats-link');
 const qrCode = document.querySelector('#qr-code');
 const statusText = document.querySelector('#setup-status');
 const entryGrid = document.querySelector('#entry-grid');
@@ -54,6 +55,7 @@ function init() {
 
   document.querySelector('#copy-host').addEventListener('click', () => copyGenerated(hostLink.value, '已複製主持頁連結。'));
   document.querySelector('#copy-play').addEventListener('click', () => copyGenerated(playLink.value, '已複製學生作答連結。'));
+  document.querySelector('#copy-stats').addEventListener('click', () => copyGenerated(statsLink.value, '已複製作答統計連結。'));
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -97,8 +99,10 @@ function generateLinks() {
 
   const hostUrl = buildPageUrl('host.html', values);
   const studentUrl = buildPageUrl('play.html', values);
+  const statsUrl = buildPageUrl('stats.html', values);
   hostLink.value = hostUrl;
   playLink.value = studentUrl;
+  statsLink.value = statsUrl;
   renderQr(qrCode, studentUrl, '學生作答 QR Code');
   resultPanel.classList.remove('hidden');
   localStorage.setItem(STORAGE_KEY, JSON.stringify(values));

@@ -7,9 +7,11 @@ const configResult = buildConfigFromParams();
 const app = document.querySelector('#stats-app');
 const errorPanel = document.querySelector('#config-error');
 const syncStatus = document.querySelector('#sync-status');
+const questionSelect = document.querySelector('#question-select');
 
 let config = null;
 let snapshot = null;
+let selectedQuestionId = '';
 let syncTimer = null;
 
 init();
@@ -25,6 +27,12 @@ function init() {
   app.classList.remove('hidden');
   setText('#class-id', config.classId);
   document.querySelector('#manual-sync').addEventListener('click', sync);
+  questionSelect.addEventListener('change', () => {
+    if (!snapshot) return;
+    selectedQuestionId = questionSelect.value;
+    snapshot = buildQuizSnapshot(snapshot.events, config.classId, selectedQuestionId);
+    renderSnapshot();
+  });
 
   sync();
   syncTimer = setInterval(sync, SYNC_INTERVAL_MS);
@@ -34,7 +42,11 @@ function init() {
 async function sync() {
   try {
     const events = await fetchSheetEvents(config);
-    snapshot = buildQuizSnapshot(events, config.classId);
+    snapshot = buildQuizSnapshot(events, config.classId, selectedQuestionId);
+    if (selectedQuestionId && !snapshot.questions.some((item) => item.question.question_id === selectedQuestionId)) {
+      selectedQuestionId = '';
+      snapshot = buildQuizSnapshot(events, config.classId);
+    }
     renderSnapshot();
     syncStatus.textContent = `已同步：${new Date().toLocaleTimeString()}`;
   } catch {
@@ -43,6 +55,7 @@ async function sync() {
 }
 
 function renderSnapshot() {
+  renderQuestionSelect();
   const question = snapshot.question;
   const stats = snapshot.stats;
   const hasQuestion = question.status !== 'waiting';
@@ -77,6 +90,21 @@ function renderSnapshot() {
       </div>
     `;
   }).join('');
+}
+
+function renderQuestionSelect() {
+  const currentValue = selectedQuestionId;
+  const options = snapshot.questions.map((item, index) => {
+    const question = item.question;
+    const label = question.question_text || `第 ${index + 1} 題`;
+    return `<option value="${escapeHtml(question.question_id)}">第 ${index + 1} 題：${escapeHtml(label)}</option>`;
+  });
+
+  questionSelect.innerHTML = [
+    '<option value="">最後一題</option>',
+    ...options,
+  ].join('');
+  questionSelect.value = currentValue;
 }
 
 function symbolFor(choice) {
