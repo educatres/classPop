@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SHEET_NAME,
   FIELD_KEYS,
   REQUIRED_FIELD_KEYS,
   buildPageUrl,
@@ -90,8 +91,6 @@ function generateLinks() {
     ...REQUIRED_FIELD_KEYS.map((key) => `field_${key}`).filter((key) => !values[key]),
   ];
 
-  if (!values.sheet_name && !values.gid) missing.push('sheet_name 或 gid');
-
   if (missing.length > 0) {
     statusText.textContent = `設定不完整：${missing.join('、')}`;
     return;
@@ -114,7 +113,7 @@ function readFormValues() {
   const values = {
     class_id: clean(formData.get('class_id')) || classId,
     sheet_id: clean(formData.get('sheet_id')),
-    sheet_name: clean(formData.get('sheet_name')),
+    sheet_name: clean(formData.get('sheet_name')) || DEFAULT_SHEET_NAME,
     gid: clean(formData.get('gid')),
     form_url: normalizeFormUrl(clean(formData.get('form_url'))),
   };

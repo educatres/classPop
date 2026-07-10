@@ -395,9 +395,9 @@ select:focus {
   background: #f9fbff;
 }
 
-.helper summary {
-  cursor: pointer;
-  font-weight: 900;
+.helper h3 {
+  margin: 0 0 10px;
+  font-size: 1.08rem;
 }
 
 .helper p {

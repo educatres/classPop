@@ -20,7 +20,7 @@
 ## 使用流程
 
 1. 開啟 `index.html`。
-2. 填入 Google Sheet ID、Sheet 名稱或 gid、Google Form submit URL。
+2. 填入 Google Sheet ID、Google Form submit URL；Sheet 名稱預設為 `表單回應 1`，需要時可改填 Sheet 名稱或 gid。
 3. 填入每個欄位對應的 Google Form `entry.xxxxx` ID。
 4. 產生主持頁與學生作答頁連結。
 5. 老師開啟主持頁，學生掃描 QR Code 進入作答頁。

@@ -26,6 +26,7 @@ export const REQUIRED_PARAMS = [
 export const OPTION_KEYS = ['A', 'B', 'C', 'D'];
 
 export const SYNC_INTERVAL_MS = 3000;
+export const DEFAULT_SHEET_NAME = '表單回應 1';
 
 export function generateId(prefix) {
   const random = crypto.getRandomValues(new Uint32Array(2));
@@ -35,10 +36,6 @@ export function generateId(prefix) {
 export function buildConfigFromParams(search = window.location.search) {
   const params = new URLSearchParams(search);
   const missing = REQUIRED_PARAMS.filter((key) => !clean(params.get(key)));
-
-  if (!params.get('sheet_name') && !params.get('gid')) {
-    missing.push('sheet_name 或 gid');
-  }
 
   if (missing.length > 0) {
     return { ok: false, missing };
@@ -54,7 +51,7 @@ export function buildConfigFromParams(search = window.location.search) {
     config: {
       classId: clean(params.get('class_id')),
       sheetId: clean(params.get('sheet_id')),
-      sheetName: clean(params.get('sheet_name')),
+      sheetName: clean(params.get('sheet_name')) || DEFAULT_SHEET_NAME,
       gid: clean(params.get('gid')),
       formUrl: normalizeFormUrl(clean(params.get('form_url'))),
       fields,

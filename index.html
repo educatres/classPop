@@ -66,7 +66,7 @@
             </label>
             <label>
               <span>Sheet 名稱</span>
-              <input name="sheet_name" autocomplete="off" placeholder="表單回應 1">
+              <input name="sheet_name" autocomplete="off" value="表單回應 1" placeholder="表單回應 1">
             </label>
             <label>
               <span>gid</span>
@@ -81,15 +81,15 @@
             </div>
           </div>
 
-          <details class="helper">
-            <summary>從 Google Form 預填連結解析 entry ID</summary>
+          <div class="helper">
+            <h3>從 Google Form 預填連結解析 entry ID</h3>
             <p>在 Google Form 建立預填連結時，把每個欄位填成欄位名稱，例如 class_id、event_type、question_id，再把預填連結貼到下方解析。</p>
             <textarea id="prefill-url" rows="4" placeholder="貼上預填連結"></textarea>
             <div class="actions">
               <button class="ghost-btn" type="button" id="fill-markers">顯示欄位名稱</button>
               <button class="ghost-btn" type="button" id="parse-prefill">解析 entry ID</button>
             </div>
-          </details>
+          </div>
 
           <div class="section-title">
             <h2>欄位對應</h2>
@@ -112,7 +112,7 @@
           <ol class="guide-list">
             <li>建立 Google Form，欄位名稱依照上方「Google Form 欄位設定」建立，欄位型態可用簡答或段落。</li>
             <li>將 Google Form 回應連結到 Google Sheet，並把 Sheet 設為「知道連結的人可以檢視」。</li>
-            <li>複製 Google Sheet ID，填入左側 Step 1；Sheet 名稱通常是 <code>表單回應 1</code>，也可以改填 gid。</li>
+            <li>複製 Google Sheet ID，填入左側 Step 1；Sheet 名稱預設是 <code>表單回應 1</code>，通常不用改，也可以改填 gid 使用 CSV 讀取。</li>
             <li>Google Form submit URL 請使用 <code>/formResponse</code> 結尾的送出網址；貼上 <code>/viewform</code> 或 <code>/edit</code> 也會自動轉換。</li>
             <li>在 Google Form 選「取得預填連結」，每題填入對應欄位名稱，再貼回 Step 2 自動帶入 entry ID。</li>
             <li>按「產生連結」後，開啟主持頁，學生掃 QR Code 進入作答頁。</li>
