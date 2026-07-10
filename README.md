@@ -7,6 +7,7 @@
 - `index.html`：老師設定頁，產生主持頁與學生作答頁連結。
 - `host.html`：老師主持 / 投影頁，建立題目、控制流程、查看統計。
 - `play.html`：學生手機作答頁。
+- `demo.html`：localStorage 功能展示入口，可開啟老師、統計與三位學生模擬連結。
 
 ## Google Form 欄位
 

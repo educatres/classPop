@@ -274,6 +274,40 @@ h2 {
   margin-top: 20px;
 }
 
+.demo-entry,
+.demo-links-panel {
+  margin-top: 20px;
+}
+
+.demo-entry {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.demo-entry p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.demo-links {
+  display: grid;
+  gap: 12px;
+}
+
+.demo-link-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.demo-link-row label {
+  margin: 0;
+}
+
 .result-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
@@ -673,6 +707,8 @@ select:focus {
   .host-grid,
   .form-guide,
   .result-layout,
+  .demo-entry,
+  .demo-link-row,
   .stats-dashboard,
   .stats-panel {
     display: block;
@@ -681,6 +717,12 @@ select:focus {
   .panel,
   .invite-band {
     margin-bottom: 18px;
+  }
+
+  .demo-link-row .ghost-btn,
+  .demo-entry .primary-btn {
+    width: 100%;
+    margin-top: 10px;
   }
 
   .entry-grid,
