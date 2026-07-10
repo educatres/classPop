@@ -61,6 +61,17 @@ select {
   display: block;
 }
 
+.intro-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 18px 0 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
 .eyebrow {
   margin: 0 0 8px;
   color: var(--accent-dark);
