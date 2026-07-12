@@ -281,6 +281,29 @@ h2 {
   font-weight: 800;
 }
 
+.manual-link {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.manual-link h3 {
+  margin: 0 0 8px;
+  font-size: 1.08rem;
+}
+
+.manual-link p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.manual-link .ghost-btn {
+  width: 100%;
+}
+
 .result-panel {
   margin-top: 20px;
 }

@@ -10,6 +10,7 @@
 - `host.html`：老師主持 / 投影頁，建立題目、控制流程、查看統計。
 - `play.html`：學生手機作答頁。
 - `demo.html`：localStorage 功能展示入口，可開啟老師、統計與三位學生模擬連結。
+- `操作手冊.pdf`：完整圖文操作手冊，說明 Google Form、Google Sheet、共用權限與預填連結設定。
 
 ## Google Form 欄位
 
@@ -21,11 +22,18 @@
 
 ## 使用流程
 
-1. 開啟 `index.html`。
-2. 填入 Google Sheet ID、Google Form submit URL；Sheet 名稱預設為 `表單回應 1`，需要時可改填 Sheet 名稱或 gid。
-3. 填入每個欄位對應的 Google Form `entry.xxxxx` ID。
-4. 產生主持頁與學生作答頁連結。
-5. 老師開啟主持頁，學生掃描 QR Code 進入作答頁。
+1. 開啟 GitHub Pages 網頁或本機 `index.html`，先建立一份 Google Form。
+2. 在 Google Form 依序建立 13 個非必填欄位，欄位型態使用簡答或段落，欄位名稱需符合「Google Form 欄位」段落。
+3. 發布 Google Form，複製作答者連結或表單網址，貼到 `Google Form submit URL`。系統會把 `/viewform` 或 `/edit` 自動轉成 `/formResponse`。
+4. 到 Google Form 的「回覆」頁籤建立並連結 Google Sheet。
+5. 將 Google Sheet 共用權限設為「知道連結的任何人」且角色為「檢視者」，讓系統可以讀取回應資料。
+6. 從 Google Sheet 網址複製 `/d/` 和 `/edit` 之間的 Sheet ID，貼到 `Google Sheet ID`。Sheet 名稱預設為 `表單回應 1`，需要時可改填 Sheet 名稱或 gid。
+7. 在 Google Form 選「預先填寫表單」，把 13 個欄位各自填入對應欄位名稱，取得預填連結。
+8. 將預填連結貼到 Step 2「從 Google Form 預填連結解析 entry ID」，按「解析 entry ID」自動帶入欄位對應。
+9. 按「產生連結」，取得老師主持頁、學生作答頁與作答統計頁。
+10. 老師開啟主持頁，學生掃描 QR Code 進入匿名作答頁；下次使用時可清除 Google Sheet 舊資料後重複使用同一組連結。
+
+詳細圖文步驟請參考 [`操作手冊.pdf`](操作手冊.pdf)。
 
 ## 限制
 
