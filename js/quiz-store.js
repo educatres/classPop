@@ -1,4 +1,4 @@
-import { OPTION_KEYS } from './config.js';
+import { DEFAULT_TIMER_SECONDS, OPTION_KEYS } from './config.js';
 
 const TEACHER_EVENTS = ['question_create', 'question_open', 'question_close', 'answer_reveal', 'question_reset'];
 
@@ -54,9 +54,16 @@ function buildQuestionState(event) {
       question_text: '',
       options: { A: '', B: '', C: '', D: '' },
       correct_answer: '',
+      timer_seconds: DEFAULT_TIMER_SECONDS,
+      opened_at: 0,
       updated_at: '',
     };
   }
+
+  const timerSeconds = normalizeTimerSeconds(event.timer_seconds);
+  const openedAt = event.event_type === 'question_open'
+    ? (Number(event.created_at) || Date.parse(event.client_timestamp || '') || 0)
+    : 0;
 
   return {
     class_id: event.class_id,
@@ -70,6 +77,8 @@ function buildQuestionState(event) {
       D: event.option_d,
     },
     correct_answer: event.correct_answer,
+    timer_seconds: timerSeconds,
+    opened_at: openedAt,
     updated_at: event.client_timestamp || event.timestamp_server || '',
   };
 }
@@ -143,7 +152,15 @@ function buildStats(question, answers) {
   };
 }
 
+function normalizeTimerSeconds(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return DEFAULT_TIMER_SECONDS;
+  return Math.max(5, Math.min(300, Math.round(number)));
+}
+
 function comparableTime(event) {
+  const serverTime = Number(event.created_at);
+  if (Number.isFinite(serverTime) && serverTime > 0) return serverTime;
   const raw = event.client_timestamp || event.timestamp_server || '';
   const parsed = Date.parse(raw);
   return Number.isFinite(parsed) ? parsed : 0;

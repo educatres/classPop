@@ -1,36 +1,22 @@
-export const FIELD_KEYS = [
-  'class_id',
-  'event_type',
-  'question_id',
-  'question_text',
-  'option_a',
-  'option_b',
-  'option_c',
-  'option_d',
-  'correct_answer',
-  'answer',
-  'student_session_id',
-  'client_timestamp',
-  'extra_json',
-];
-
-export const REQUIRED_FIELD_KEYS = FIELD_KEYS.filter((key) => key !== 'extra_json');
-
-export const REQUIRED_PARAMS = [
-  'class_id',
-  'sheet_id',
-  'form_url',
-  ...REQUIRED_FIELD_KEYS.map((key) => `field_${key}`),
-];
-
+export const REQUIRED_PARAMS = ['class_id'];
 export const OPTION_KEYS = ['A', 'B', 'C', 'D'];
-
-export const SYNC_INTERVAL_MS = 3000;
-export const DEFAULT_SHEET_NAME = '表單回應 1';
+export const CLASS_LIFETIME_MS = 3 * 24 * 60 * 60 * 1000;
+export const DEFAULT_TIMER_SECONDS = 30;
 
 export function generateId(prefix) {
   const random = crypto.getRandomValues(new Uint32Array(2));
   return `${prefix}_${Date.now().toString(36)}_${Array.from(random, (value) => value.toString(36)).join('')}`;
+}
+
+export function generateClassId() {
+  const random = crypto.getRandomValues(new Uint32Array(2));
+  const digits = `${random[0]}${random[1]}`.slice(0, 12).padEnd(12, '0');
+  return `c${digits.slice(0, 4)}-${digits.slice(4, 8)}-${digits.slice(8, 12)}`;
+}
+
+export function generateTeacherPin() {
+  const random = crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000;
+  return String(random).padStart(6, '0');
 }
 
 export function buildConfigFromParams(search = window.location.search) {
@@ -41,20 +27,10 @@ export function buildConfigFromParams(search = window.location.search) {
     return { ok: false, missing };
   }
 
-  const fields = {};
-  for (const key of FIELD_KEYS) {
-    fields[key] = clean(params.get(`field_${key}`));
-  }
-
   return {
     ok: true,
     config: {
       classId: clean(params.get('class_id')),
-      sheetId: clean(params.get('sheet_id')),
-      sheetName: clean(params.get('sheet_name')) || DEFAULT_SHEET_NAME,
-      gid: clean(params.get('gid')),
-      formUrl: normalizeFormUrl(clean(params.get('form_url'))),
-      fields,
     },
   };
 }
@@ -71,24 +47,7 @@ export function buildPageUrl(pageName, values, baseHref = window.location.href) 
 }
 
 export function buildUrlValuesFromConfig(config) {
-  const values = {
-    class_id: config.classId,
-    sheet_id: config.sheetId,
-    sheet_name: config.sheetName,
-    gid: config.gid,
-    form_url: config.formUrl,
-  };
-
-  for (const key of FIELD_KEYS) {
-    values[`field_${key}`] = config.fields[key] || '';
-  }
-
-  return values;
-}
-
-export function normalizeFormUrl(url) {
-  if (!url) return '';
-  return url.replace('/viewform', '/formResponse').replace('/edit', '/formResponse');
+  return { class_id: config.classId };
 }
 
 export function clean(value) {

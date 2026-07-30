@@ -1,6 +1,6 @@
-import { OPTION_KEYS, SYNC_INTERVAL_MS, buildConfigFromParams, generateId } from './config.js';
-import { submitEvent } from './google-form.js';
-import { fetchSheetEvents } from './google-sheet.js';
+import { OPTION_KEYS, buildConfigFromParams, generateId } from './config.js';
+import { deleteExpiredClass, fetchClassEvents, submitEvent, subscribeToClassEvents, subscribeToServerTimeOffset } from './firebase-store.js';
+import { CountdownAudio, getCountdownState, updateCountdownElement } from './countdown-audio.js';
 import { buildQuizSnapshot } from './quiz-store.js';
 import { escapeHtml, formatStatus, setText } from './utils.js';
 
@@ -8,47 +8,88 @@ const configResult = buildConfigFromParams();
 const app = document.querySelector('#play-app');
 const errorPanel = document.querySelector('#config-error');
 const syncStatus = document.querySelector('#sync-status');
+const soundToggle = document.querySelector('#sound-toggle');
 
 let config = null;
 let snapshot = null;
 let studentId = '';
-let syncTimer = null;
+let unsubscribe = null;
+let unsubscribeTimeOffset = null;
+let serverTimeOffset = 0;
+let countdownInterval = null;
+let soundEnabled = false;
+let playedResultKey = '';
+const pendingAnswers = new Map();
+const countdownAudio = new CountdownAudio(false);
 
 init();
 
-function init() {
+async function init() {
   if (!configResult.ok) {
     errorPanel.classList.remove('hidden');
-    errorPanel.textContent = `系統設定不完整，請回到老師設定頁重新產生連結。缺少：${configResult.missing.join('、')}`;
+    errorPanel.textContent = `系統設定不完整，請重新掃描老師提供的 QR Code。缺少：${configResult.missing.join('、')}`;
     return;
   }
 
   config = configResult.config;
+  snapshot = buildQuizSnapshot([], config.classId);
   studentId = getStudentId();
   app.classList.remove('hidden');
   setText('#class-id', config.classId);
-  document.querySelector('#manual-sync').addEventListener('click', sync);
+  document.querySelector('#manual-sync').addEventListener('click', manualSync);
+  soundToggle.addEventListener('click', toggleSound);
+  renderSnapshot();
+  countdownInterval = window.setInterval(updateStudentCountdown, 100);
 
-  sync();
-  syncTimer = setInterval(sync, SYNC_INTERVAL_MS);
-  window.addEventListener('pagehide', () => clearInterval(syncTimer));
+  try {
+    unsubscribeTimeOffset = await subscribeToServerTimeOffset((offset) => {
+      serverTimeOffset = offset;
+      updateStudentCountdown();
+    }, () => {});
+  } catch (error) {
+    console.warn('無法取得 Firebase server time offset，改用裝置時間。', error);
+  }
+
+  try {
+    unsubscribe = await subscribeToClassEvents(config, handleEvents, handleFirebaseError);
+    syncStatus.textContent = 'Firebase 即時同步已連線。';
+  } catch (error) {
+    handleFirebaseError(error);
+  }
+
+  window.addEventListener('pagehide', cleanup);
 }
 
-async function sync() {
+function handleEvents(events) {
+  snapshot = buildQuizSnapshot(events, config.classId);
+  renderSnapshot();
+  syncStatus.textContent = `已同步：${new Date().toLocaleTimeString()}`;
+}
+
+async function manualSync() {
   try {
-    const events = await fetchSheetEvents(config);
-    snapshot = buildQuizSnapshot(events, config.classId);
-    renderSnapshot();
-    syncStatus.textContent = `已同步：${new Date().toLocaleTimeString()}`;
-  } catch {
-    syncStatus.textContent = '無法讀取 Google Sheet，請確認試算表已設定為「知道連結的人可以檢視」。';
+    const events = await fetchClassEvents(config);
+    handleEvents(events);
+  } catch (error) {
+    handleFirebaseError(error);
   }
+}
+
+function handleFirebaseError(error) {
+  console.error(error);
+  const message = String(error?.message || error || '');
+  const permissionDenied = /permission_denied|permission denied/i.test(message);
+  if (permissionDenied) deleteExpiredClass(config?.classId).catch(() => {});
+  syncStatus.textContent = permissionDenied
+    ? '課程可能已超過 3 天到期，或 Firebase 權限設定尚未完成。'
+    : (message || 'Firebase 連線失敗。');
 }
 
 function renderSnapshot() {
   const question = snapshot.question;
   const localAnswers = readLocalAnswers();
-  const myAnswer = localAnswers[question.question_id] || findSyncedAnswer(question.question_id);
+  const pendingAnswer = pendingAnswers.get(question.question_id) || '';
+  const myAnswer = localAnswers[question.question_id] || findSyncedAnswer(question.question_id) || pendingAnswer;
   const isAnswered = Boolean(myAnswer);
 
   setText('#question-status', formatStatus(question.status));
@@ -66,28 +107,40 @@ function renderSnapshot() {
 
   if (question.status === 'open' && !isAnswered) {
     renderQuestion(question, renderAnswerButtons(question));
+    updateStudentCountdown();
     return;
   }
 
   if (question.status === 'closed' && !isAnswered) {
     renderQuestion(question, '');
-    renderMessage('作答已截止', '請等待老師公布答案。', true);
+    renderMessage('作答已截止', '請等待老師公布答案。', true, 'result-neutral');
     return;
   }
 
   if (question.status === 'revealed') {
     renderQuestion(question, '');
-    renderResult(myAnswer, question.correct_answer);
+    renderResult(myAnswer, question.correct_answer, question.question_id);
     return;
   }
 
   renderQuestion(question, '');
-  renderMessage('已送出答案', `你的答案：${myAnswer}<br>等待老師公布答案。`, true);
+  const pending = pendingAnswers.has(question.question_id);
+  renderMessage(pending ? '正在送出…' : '答案已鎖定 ✓', `你的答案：${escapeHtml(myAnswer)}<br>${pending ? '正在寫入 Firebase，請勿關閉頁面。' : '等待老師公布答案。'}`, true, 'result-pending');
+  updateStudentCountdown();
 }
 
 function renderQuestion(question, actionsHtml) {
+  const countdownHtml = question.status === 'open' ? `
+    <div id="student-countdown" class="countdown-widget student-countdown" aria-live="polite">
+      <div class="countdown-label">作答倒數</div>
+      <div class="countdown-number" data-countdown-number>${question.timer_seconds}</div>
+      <div class="countdown-progress"><span data-countdown-fill></span></div>
+    </div>
+  ` : '';
+
   document.querySelector('#play-content').innerHTML = `
     <section class="student-question">
+      ${countdownHtml}
       <h1>${escapeHtml(question.question_text)}</h1>
       <div class="answer-grid">
         ${OPTION_KEYS.map((key) => `
@@ -117,9 +170,9 @@ function renderAnswerButtons(question) {
   `;
 }
 
-function renderMessage(title, body, append = false) {
+function renderMessage(title, body, append = false, className = '') {
   const html = `
-    <section class="message-panel">
+    <section class="message-panel ${className}">
       <h1>${title}</h1>
       <p>${body}</p>
     </section>
@@ -132,14 +185,43 @@ function renderMessage(title, body, append = false) {
   }
 }
 
-function renderResult(myAnswer, correctAnswer) {
+function renderResult(myAnswer, correctAnswer, questionId) {
   const isCorrect = myAnswer && myAnswer === correctAnswer;
-  const title = isCorrect ? '答對了！' : '答錯了';
+  const title = isCorrect ? '答對了！ ✓' : '答錯了';
   const body = myAnswer
-    ? `你的答案：${myAnswer}<br>正確答案：${correctAnswer}`
-    : `你沒有送出答案<br>正確答案：${correctAnswer}`;
+    ? `你的答案：${escapeHtml(myAnswer)}<br>正確答案：${escapeHtml(correctAnswer)}`
+    : `你沒有送出答案<br>正確答案：${escapeHtml(correctAnswer)}`;
 
-  renderMessage(title, body, true);
+  renderMessage(title, body, true, isCorrect ? 'result-correct' : 'result-wrong');
+  const resultKey = `${questionId}:${correctAnswer}:${myAnswer || '-'}`;
+  if (playedResultKey !== resultKey) {
+    playedResultKey = resultKey;
+    if (isCorrect) countdownAudio.correct();
+    else countdownAudio.wrong();
+  }
+}
+
+function updateStudentCountdown() {
+  if (!snapshot) return;
+  const state = getCountdownState(snapshot.question, Date.now() + serverTimeOffset);
+  const element = document.querySelector('#student-countdown');
+  updateCountdownElement(element, state);
+  if (!state.active) return;
+
+  countdownAudio.tick(state.key, state.secondsRemaining);
+  if (state.remainingMs <= 0) {
+    document.querySelectorAll('.choice-btn').forEach((button) => {
+      button.disabled = true;
+    });
+    setText('#question-status', '時間到');
+  }
+}
+
+async function toggleSound() {
+  soundEnabled = !soundEnabled;
+  await countdownAudio.setEnabled(soundEnabled);
+  soundToggle.setAttribute('aria-pressed', String(soundEnabled));
+  soundToggle.textContent = soundEnabled ? '🔊 節拍開啟' : '🔇 開啟節拍';
 }
 
 document.addEventListener('click', async (event) => {
@@ -149,17 +231,25 @@ document.addEventListener('click', async (event) => {
   const question = snapshot.question;
   const answer = button.dataset.answer;
   const localAnswers = readLocalAnswers();
+  const countdown = getCountdownState(question, Date.now() + serverTimeOffset);
 
   if (question.status !== 'open' || localAnswers[question.question_id]) return;
+  if (countdown.active && countdown.remainingMs <= 0) {
+    syncStatus.textContent = '作答時間已結束。';
+    updateStudentCountdown();
+    return;
+  }
 
-  button.disabled = true;
+  document.querySelectorAll('.choice-btn').forEach((item) => {
+    item.disabled = true;
+  });
+  button.classList.add('is-selected');
+  pendingAnswers.set(question.question_id, answer);
+  renderSnapshot();
   await submitAnswer(question, answer);
 });
 
 async function submitAnswer(question, answer) {
-  writeLocalAnswer(question.question_id, answer);
-  renderSnapshot();
-
   try {
     await submitEvent(config, {
       event_type: 'answer_submit',
@@ -172,11 +262,19 @@ async function submitAnswer(question, answer) {
       correct_answer: question.correct_answer,
       answer,
       student_session_id: studentId,
+      timer_seconds: question.timer_seconds,
       extra_json: '{}',
     });
-    syncStatus.textContent = '已嘗試送出，資料同步可能需要幾秒鐘。';
+    writeLocalAnswer(question.question_id, answer);
+    pendingAnswers.delete(question.question_id);
+    countdownAudio.submit();
+    renderSnapshot();
+    syncStatus.textContent = '答案已送出並鎖定。';
   } catch (error) {
-    syncStatus.textContent = `送出失敗：${error.message}`;
+    console.error(error);
+    pendingAnswers.delete(question.question_id);
+    syncStatus.textContent = `送出失敗：${String(error?.message || error)}`;
+    renderSnapshot();
   }
 }
 
@@ -185,7 +283,7 @@ function findSyncedAnswer(questionId) {
 }
 
 function getStudentId() {
-  const key = 'classquiz:student_session_id';
+  const key = 'classpop:student_session_id';
   const existing = localStorage.getItem(key);
   if (existing) return existing;
   const next = generateId('stu');
@@ -194,13 +292,19 @@ function getStudentId() {
 }
 
 function readLocalAnswers() {
-  return JSON.parse(localStorage.getItem(`classquiz:${config.classId}:answers`) || '{}');
+  return JSON.parse(localStorage.getItem(`classpop:${config.classId}:answers`) || '{}');
 }
 
 function writeLocalAnswer(questionId, answer) {
   const answers = readLocalAnswers();
   answers[questionId] = answer;
-  localStorage.setItem(`classquiz:${config.classId}:answers`, JSON.stringify(answers));
+  localStorage.setItem(`classpop:${config.classId}:answers`, JSON.stringify(answers));
+}
+
+function cleanup() {
+  unsubscribe?.();
+  unsubscribeTimeOffset?.();
+  if (countdownInterval) window.clearInterval(countdownInterval);
 }
 
 function symbolFor(choice) {

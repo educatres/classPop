@@ -1,0 +1,40 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "classes": {
+      "$classId": {
+        ".write": "auth != null && ((!data.exists() && newData.child('meta').child('class_id').val() === $classId && newData.child('meta').child('created_at').isNumber() && newData.child('meta').child('created_at').val() <= now && newData.child('meta').child('created_at').val() >= now - 60000 && newData.child('private').child('teacher_pin').isString() && newData.child('private').child('teacher_pin').val().matches(/^\\d{6}$/)) || (data.exists() && !newData.exists() && ((data.child('meta').child('created_at').isNumber() && now >= data.child('meta').child('created_at').val() + 259200000) || (data.child('teacherSessions').child(auth.uid).child('pin').isString() && data.child('teacherSessions').child(auth.uid).child('pin').val() === data.child('private').child('teacher_pin').val()))))",
+        "meta": {
+          ".read": "auth != null && data.child('created_at').isNumber() && now < data.child('created_at').val() + 259200000",
+          ".validate": "newData.hasChildren(['class_id', 'created_at']) && newData.child('class_id').isString() && newData.child('class_id').val() === $classId && newData.child('created_at').isNumber()"
+        },
+        "private": {
+          ".read": false,
+          ".validate": "newData.hasChildren(['teacher_pin']) && newData.child('teacher_pin').isString() && newData.child('teacher_pin').val().matches(/^\\d{6}$/)"
+        },
+        "teacherSessions": {
+          "$uid": {
+            ".read": "auth != null && auth.uid === $uid && root.child('classes').child($classId).child('meta').child('created_at').isNumber() && now < root.child('classes').child($classId).child('meta').child('created_at').val() + 259200000",
+            ".write": "auth != null && auth.uid === $uid && root.child('classes').child($classId).child('meta').child('created_at').isNumber() && now < root.child('classes').child($classId).child('meta').child('created_at').val() + 259200000 && newData.exists() && newData.child('pin').isString() && newData.child('pin').val() === root.child('classes').child($classId).child('private').child('teacher_pin').val()",
+            ".validate": "newData.hasChildren(['pin','authorized_at']) && newData.child('pin').isString() && newData.child('pin').val().matches(/^\\d{6}$/) && newData.child('authorized_at').isNumber()"
+          }
+        },
+        "events": {
+          ".read": "auth != null && root.child('classes').child($classId).child('meta').child('created_at').isNumber() && now < root.child('classes').child($classId).child('meta').child('created_at').val() + 259200000",
+          "$eventId": {
+            ".write": "auth != null && !data.exists() && root.child('classes').child($classId).child('meta').child('created_at').isNumber() && now < root.child('classes').child($classId).child('meta').child('created_at').val() + 259200000 && (newData.child('event_type').val() === 'answer_submit' || (root.child('classes').child($classId).child('teacherSessions').child(auth.uid).child('pin').isString() && root.child('classes').child($classId).child('teacherSessions').child(auth.uid).child('pin').val() === root.child('classes').child($classId).child('private').child('teacher_pin').val()))",
+            ".validate": "newData.hasChildren(['event_id','class_id','event_type','question_id','question_text','option_a','option_b','option_c','option_d','correct_answer','answer','student_session_id','client_timestamp','extra_json','timer_seconds','created_at']) && newData.child('event_id').isString() && newData.child('event_id').val() === $eventId && newData.child('class_id').isString() && newData.child('class_id').val() === $classId && newData.child('event_type').isString() && newData.child('event_type').val().matches(/^(question_create|question_open|question_close|answer_reveal|question_reset|answer_submit)$/) && newData.child('question_id').isString() && newData.child('question_id').val().length <= 200 && newData.child('question_text').isString() && newData.child('question_text').val().length <= 3000 && newData.child('option_a').isString() && newData.child('option_a').val().length <= 1500 && newData.child('option_b').isString() && newData.child('option_b').val().length <= 1500 && newData.child('option_c').isString() && newData.child('option_c').val().length <= 1500 && newData.child('option_d').isString() && newData.child('option_d').val().length <= 1500 && newData.child('correct_answer').isString() && newData.child('correct_answer').val().matches(/^[ABCD]?$/) && newData.child('answer').isString() && newData.child('answer').val().matches(/^[ABCD]?$/) && newData.child('student_session_id').isString() && newData.child('student_session_id').val().length <= 240 && newData.child('client_timestamp').isString() && newData.child('client_timestamp').val().length <= 80 && newData.child('extra_json').isString() && newData.child('extra_json').val().length <= 5000 && newData.child('timer_seconds').isNumber() && newData.child('timer_seconds').val() >= 5 && newData.child('timer_seconds').val() <= 300 && newData.child('created_at').isNumber()"
+          }
+        }
+      }
+    },
+    "classCatalog": {
+      ".read": "auth != null",
+      "$classId": {
+        ".write": "auth != null && ((!data.exists() && root.child('classes').child($classId).child('meta').child('created_at').isNumber()) || (data.exists() && !newData.exists() && ((data.child('created_at').isNumber() && now >= data.child('created_at').val() + 259200000) || (root.child('classes').child($classId).child('teacherSessions').child(auth.uid).child('pin').isString() && root.child('classes').child($classId).child('teacherSessions').child(auth.uid).child('pin').val() === root.child('classes').child($classId).child('private').child('teacher_pin').val()))))",
+        ".validate": "!newData.exists() || (newData.hasChildren(['class_id','created_at']) && newData.child('class_id').isString() && newData.child('class_id').val() === $classId && newData.child('created_at').isNumber())"
+      }
+    }
+  }
+}

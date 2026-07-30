@@ -1,5 +1,5 @@
-import { OPTION_KEYS, SYNC_INTERVAL_MS, buildConfigFromParams } from './config.js';
-import { fetchSheetEvents } from './google-sheet.js';
+import { OPTION_KEYS, buildConfigFromParams } from './config.js';
+import { deleteExpiredClass, fetchClassEvents, subscribeToClassEvents } from './firebase-store.js';
 import { buildQuizSnapshot } from './quiz-store.js';
 import { escapeHtml, formatStatus, setText } from './utils.js';
 
@@ -12,11 +12,11 @@ const questionSelect = document.querySelector('#question-select');
 let config = null;
 let snapshot = null;
 let selectedQuestionId = '';
-let syncTimer = null;
+let unsubscribe = null;
 
 init();
 
-function init() {
+async function init() {
   if (!configResult.ok) {
     errorPanel.classList.remove('hidden');
     errorPanel.textContent = `系統設定不完整，請回到老師設定頁重新產生連結。缺少：${configResult.missing.join('、')}`;
@@ -24,34 +24,55 @@ function init() {
   }
 
   config = configResult.config;
+  snapshot = buildQuizSnapshot([], config.classId);
   app.classList.remove('hidden');
   setText('#class-id', config.classId);
-  document.querySelector('#manual-sync').addEventListener('click', sync);
+  document.querySelector('#manual-sync').addEventListener('click', manualSync);
   questionSelect.addEventListener('change', () => {
     if (!snapshot) return;
     selectedQuestionId = questionSelect.value;
     snapshot = buildQuizSnapshot(snapshot.events, config.classId, selectedQuestionId);
     renderSnapshot();
   });
+  renderSnapshot();
 
-  sync();
-  syncTimer = setInterval(sync, SYNC_INTERVAL_MS);
-  window.addEventListener('pagehide', () => clearInterval(syncTimer));
+  try {
+    unsubscribe = await subscribeToClassEvents(config, handleEvents, handleFirebaseError);
+    syncStatus.textContent = 'Firebase 即時同步已連線。';
+  } catch (error) {
+    handleFirebaseError(error);
+  }
+
+  window.addEventListener('pagehide', () => unsubscribe?.());
 }
 
-async function sync() {
-  try {
-    const events = await fetchSheetEvents(config);
-    snapshot = buildQuizSnapshot(events, config.classId, selectedQuestionId);
-    if (selectedQuestionId && !snapshot.questions.some((item) => item.question.question_id === selectedQuestionId)) {
-      selectedQuestionId = '';
-      snapshot = buildQuizSnapshot(events, config.classId);
-    }
-    renderSnapshot();
-    syncStatus.textContent = `已同步：${new Date().toLocaleTimeString()}`;
-  } catch {
-    syncStatus.textContent = '無法讀取 Google Sheet，請確認試算表已設定為「知道連結的人可以檢視」。';
+function handleEvents(events) {
+  snapshot = buildQuizSnapshot(events, config.classId, selectedQuestionId);
+  if (selectedQuestionId && !snapshot.questions.some((item) => item.question.question_id === selectedQuestionId)) {
+    selectedQuestionId = '';
+    snapshot = buildQuizSnapshot(events, config.classId);
   }
+  renderSnapshot();
+  syncStatus.textContent = `已同步：${new Date().toLocaleTimeString()}`;
+}
+
+async function manualSync() {
+  try {
+    const events = await fetchClassEvents(config);
+    handleEvents(events);
+  } catch (error) {
+    handleFirebaseError(error);
+  }
+}
+
+function handleFirebaseError(error) {
+  console.error(error);
+  const message = String(error?.message || error || '');
+  const permissionDenied = /permission_denied|permission denied/i.test(message);
+  if (permissionDenied) deleteExpiredClass(config?.classId).catch(() => {});
+  syncStatus.textContent = permissionDenied
+    ? '課程可能已超過 3 天到期，或 Firebase 權限設定尚未完成。'
+    : (message || 'Firebase 連線失敗。');
 }
 
 function renderSnapshot() {

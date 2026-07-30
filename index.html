@@ -11,94 +11,45 @@
       <header class="page-head">
         <p class="eyebrow">ClassPop</p>
         <h1>上課即時回答系統</h1>
-        <img class="intro-image" src="UI簡介圖.png" alt="ClassPop 課堂即時回答系統 UI 簡介圖" width="2048" height="768">
-        <p>輸入 Google Form 與 Google Sheet 設定，產生主持頁、學生作答頁與 QR Code。</p>
+        <p>Firebase 即時同步版本。建立課程後即可產生主持頁、學生匿名作答頁、統計頁與 QR Code。</p>
       </header>
 
       <section class="notice">
-        請勿要求學生輸入姓名、學號、Email 或其他個資。公開試算表知道連結的人可能讀取資料，本系統不適合正式考試。
+        學生不需要註冊或登入帳號，前端會使用 Firebase Anonymous Authentication。每個課程自建立起保留 3 天；到期後停止讀寫，並於首頁偵測到過期課程時自動刪除。
       </section>
 
-      <section class="panel form-guide">
-        <div>
-          <h2>Google Form 欄位設定</h2>
-          <p>請先建立一份 Google Form，所有欄位使用「簡答」或「段落」。欄位名稱請照下面文字建立，送出回應後再連結到 Google Sheet。</p>
-        </div>
-        <div class="field-name-list" aria-label="Google Form 欄位名稱">
-          <code>class_id</code>
-          <code>event_type</code>
-          <code>question_id</code>
-          <code>question_text</code>
-          <code>option_a</code>
-          <code>option_b</code>
-          <code>option_c</code>
-          <code>option_d</code>
-          <code>correct_answer</code>
-          <code>answer</code>
-          <code>student_session_id</code>
-          <code>client_timestamp</code>
-          <code>extra_json</code>
-        </div>
-      </section>
-
-      <div class="setup-layout">
+      <div class="setup-layout firebase-setup-layout">
         <form id="setup-form" class="panel">
           <div class="section-title">
             <div>
               <p class="eyebrow">Step 1</p>
-              <h2>貼上 Google 設定</h2>
+              <h2>建立 Firebase 課程</h2>
             </div>
-            <button class="ghost-btn" type="button" id="reset-class-id">重產 class_id</button>
+            <button class="ghost-btn" type="button" id="reset-class-id">重產課程 ID</button>
           </div>
 
           <label>
-            <span>class_id <b>*</b></span>
-            <input id="class-id" name="class_id" autocomplete="off">
+            <span>課程 ID / Firebase ID</span>
+            <input id="class-id" name="class_id" autocomplete="off" readonly>
           </label>
 
-          <div class="two-col">
-            <label>
-              <span>Google Sheet ID <b>*</b></span>
-              <input name="sheet_id" autocomplete="off" required>
-            </label>
-            <label>
-              <span>Google Form submit URL <b>*</b></span>
-              <input name="form_url" autocomplete="off" required placeholder=".../formResponse">
-            </label>
-            <label>
-              <span>Sheet 名稱</span>
-              <input name="sheet_name" autocomplete="off" value="表單回應 1" placeholder="表單回應 1">
-            </label>
-            <label>
-              <span>gid</span>
-              <input name="gid" autocomplete="off" placeholder="使用 CSV 讀取時填寫">
-            </label>
-          </div>
-
-          <div class="section-title compact">
-            <div>
-              <p class="eyebrow">Step 2</p>
-              <h2>自動帶入 entry ID</h2>
+          <label>
+            <span>教師六位數密鑰</span>
+            <div class="inline-copy-field">
+              <input id="teacher-pin" name="teacher_pin" inputmode="numeric" maxlength="6" readonly>
+              <button id="copy-teacher-pin" class="ghost-btn" type="button">複製密鑰</button>
             </div>
-          </div>
+          </label>
+          <p class="helper-note">主持頁不會把密鑰放在網址中。請記下這 6 位數，老師首次進入主持頁時需要輸入。</p>
 
-          <div class="helper">
-            <h3>從 Google Form 預填連結解析 entry ID</h3>
-            <p>在 Google Form 建立預填連結時，把每個欄位填成欄位名稱，例如 class_id、event_type、question_id，再把預填連結貼到下方解析。</p>
-            <textarea id="prefill-url" rows="4" placeholder="貼上預填連結"></textarea>
-            <div class="actions">
-              <button class="ghost-btn" type="button" id="fill-markers">顯示欄位名稱</button>
-              <button class="ghost-btn" type="button" id="parse-prefill">解析 entry ID</button>
-            </div>
+          <div class="firebase-info-card">
+            <strong>資料位置</strong>
+            <code id="firebase-path">classes/</code>
+            <p>題目、流程事件與匿名作答紀錄都會寫入此課程節點。</p>
           </div>
-
-          <div class="section-title">
-            <h2>欄位對應</h2>
-          </div>
-          <div id="entry-grid" class="entry-grid"></div>
 
           <div class="actions">
-            <button class="primary-btn" type="submit">產生連結</button>
+            <button class="primary-btn" type="submit">建立課程並產生連結</button>
             <span id="setup-status" class="status-text"></span>
           </div>
         </form>
@@ -106,35 +57,28 @@
         <aside class="panel guide-panel">
           <div class="section-title">
             <div>
-              <p class="eyebrow">快速教學</p>
-              <h2>老師準備方式</h2>
+              <p class="eyebrow">Firebase</p>
+              <h2>第一次部署設定</h2>
             </div>
           </div>
           <ol class="guide-list">
-            <li>建立 Google Form，欄位名稱依照上方「Google Form 欄位設定」建立，欄位型態可用簡答或段落。</li>
-            <li>將 Google Form 回應連結到 Google Sheet，並把 Sheet 設為「知道連結的人可以檢視」。</li>
-            <li>複製 Google Sheet ID，填入左側 Step 1；Sheet 名稱預設是 <code>表單回應 1</code>，通常不用改，也可以改填 gid 使用 CSV 讀取。</li>
-            <li>Google Form submit URL 請使用 <code>/formResponse</code> 結尾的送出網址；貼上 <code>/viewform</code> 或 <code>/edit</code> 也會自動轉換。</li>
-            <li>在 Google Form 選「取得預填連結」，每題填入對應欄位名稱，再貼回 Step 2 自動帶入 entry ID。</li>
-            <li>按「產生連結」後，開啟主持頁，學生掃 QR Code 進入作答頁。</li>
+            <li>在 Firebase Authentication 啟用「匿名」登入方式。</li>
+            <li>建立 Realtime Database，並確認 <code>js/firebase-config.js</code> 的專案設定正確。</li>
+            <li>使用專案內的 <code>database.rules.json</code> 部署安全規則。</li>
+            <li>網站本身可繼續部署在 GitHub Pages，不需要 Google Form、Google Sheet 或 Apps Script。</li>
+            <li>課程建立後，將學生作答連結或 QR Code 分享給學生即可匿名作答。</li>
+            <li>老師進入主持頁時以 6 位數密鑰登入；登入後才可控制題目與刪除課程。</li>
           </ol>
-          <div class="manual-link">
-            <div>
-              <p class="eyebrow">PDF Manual</p>
-              <h3>完整操作手冊</h3>
-              <p>第一次設定 Google Form、Google Sheet、共用權限與預填連結時，可搭配手冊逐步確認。</p>
-            </div>
-            <a class="ghost-btn" href="操作手冊.pdf" target="_blank" rel="noopener">開啟操作手冊</a>
-          </div>
         </aside>
       </div>
 
       <section id="result-panel" class="panel result-panel hidden" aria-live="polite">
         <div class="section-title">
           <div>
-            <p class="eyebrow">Step 3</p>
+            <p class="eyebrow">Step 2</p>
             <h2>分享課堂</h2>
           </div>
+          <span id="expire-note" class="status-text"></span>
         </div>
         <div class="result-layout">
           <div>
@@ -161,14 +105,21 @@
         </div>
       </section>
 
-      <section class="panel demo-entry">
-        <div>
-          <p class="eyebrow">Demo</p>
-          <h2>不用 Google 的功能展示</h2>
-          <p>開啟 localStorage 展示版，可以用老師頁、統計頁與三位學生連結快速模擬課堂流程。</p>
+      <div class="secret-directory-entry">
+        <button id="class-directory-toggle" class="secret-directory-toggle" type="button" aria-label="顯示所有課程 Firebase ID" aria-expanded="false" title="Firebase IDs">🔑</button>
+      </div>
+
+      <aside id="class-directory-panel" class="debug-directory-panel hidden" aria-label="Firebase 課程清單">
+        <div class="debug-directory-head">
+          <div>
+            <p class="eyebrow">Debug</p>
+            <strong>所有課程 Firebase ID</strong>
+          </div>
+          <button id="class-directory-close" class="ghost-btn small" type="button">關閉</button>
         </div>
-        <a class="primary-btn as-link" href="demo.html">開啟功能展示</a>
-      </section>
+        <p id="class-directory-status" class="status-text">正在讀取…</p>
+        <ul id="class-directory-list" class="board-directory-list"></ul>
+      </aside>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>

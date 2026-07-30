@@ -1,151 +1,143 @@
-import {
-  DEFAULT_SHEET_NAME,
-  FIELD_KEYS,
-  REQUIRED_FIELD_KEYS,
-  buildPageUrl,
-  clean,
-  generateId,
-  normalizeFormUrl,
-} from './config.js';
+import { CLASS_LIFETIME_MS, buildPageUrl, generateClassId, generateTeacherPin } from './config.js';
+import { createClass, deleteExpiredClass, isExpired, subscribeToClassCatalog } from './firebase-store.js';
 import { renderQr } from './qr.js';
 import { copyText } from './utils.js';
 
-const STORAGE_KEY = 'classquiz:setup';
 const form = document.querySelector('#setup-form');
+const classIdInput = document.querySelector('#class-id');
+const teacherPinInput = document.querySelector('#teacher-pin');
+const firebasePath = document.querySelector('#firebase-path');
 const resultPanel = document.querySelector('#result-panel');
 const hostLink = document.querySelector('#host-link');
 const playLink = document.querySelector('#play-link');
 const statsLink = document.querySelector('#stats-link');
 const qrCode = document.querySelector('#qr-code');
 const statusText = document.querySelector('#setup-status');
-const entryGrid = document.querySelector('#entry-grid');
-const prefillUrl = document.querySelector('#prefill-url');
+const expireNote = document.querySelector('#expire-note');
+const directoryToggle = document.querySelector('#class-directory-toggle');
+const directoryPanel = document.querySelector('#class-directory-panel');
+const directoryClose = document.querySelector('#class-directory-close');
+const directoryStatus = document.querySelector('#class-directory-status');
+const directoryList = document.querySelector('#class-directory-list');
 
-let classId = generateId('class');
+let classId = generateClassId();
+let teacherPin = generateTeacherPin();
+let latestClasses = [];
+const attemptedExpiredCleanup = new Set();
 
 init();
 
 function init() {
-  renderFieldInputs();
-  loadSavedSetup();
+  renderCredentials();
 
   document.querySelector('#reset-class-id').addEventListener('click', () => {
-    classId = generateId('class');
-    document.querySelector('#class-id').value = classId;
-    statusText.textContent = '已產生新的 class_id。';
+    classId = generateClassId();
+    teacherPin = generateTeacherPin();
+    renderCredentials();
+    statusText.textContent = '已產生新的課程 ID 與教師密鑰。';
+    resultPanel.classList.add('hidden');
   });
 
-  document.querySelector('#fill-markers').addEventListener('click', () => {
-    prefillUrl.value = FIELD_KEYS.join('\n');
-    statusText.textContent = '請到 Google Form 預填連結頁，把每題答案依序填成這些欄位名稱，再貼回預填連結。';
+  document.querySelector('#copy-teacher-pin').addEventListener('click', async () => {
+    await copyText(teacherPin);
+    statusText.textContent = '已複製教師六位數密鑰。';
   });
-
-  document.querySelector('#parse-prefill').addEventListener('click', () => {
-    const result = parsePrefillUrl(prefillUrl.value);
-    for (const [key, entryId] of Object.entries(result.fields)) {
-      const input = form.elements.namedItem(`field_${key}`);
-      if (input) input.value = entryId;
-    }
-    if (result.formUrl && !clean(form.elements.namedItem('form_url').value)) {
-      form.elements.namedItem('form_url').value = result.formUrl;
-    }
-    statusText.textContent = result.missing.length
-      ? `已帶入 ${Object.keys(result.fields).length} 個 entry ID，還缺：${result.missing.join('、')}。`
-      : '已自動帶入全部 entry ID。';
-  });
-
   document.querySelector('#copy-host').addEventListener('click', () => copyGenerated(hostLink.value, '已複製主持頁連結。'));
   document.querySelector('#copy-play').addEventListener('click', () => copyGenerated(playLink.value, '已複製學生作答連結。'));
   document.querySelector('#copy-stats').addEventListener('click', () => copyGenerated(statsLink.value, '已複製作答統計連結。'));
 
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    generateLinks();
+  form.addEventListener('submit', createFirebaseClass);
+  directoryToggle.addEventListener('click', () => setDirectoryOpen(directoryPanel.classList.contains('hidden')));
+  directoryClose.addEventListener('click', () => setDirectoryOpen(false));
+
+  subscribeToClassCatalog((classes) => {
+    latestClasses = classes;
+    renderDirectory();
+    cleanupExpiredClasses(classes);
+  }, (error) => {
+    console.error(error);
+    directoryStatus.textContent = '無法讀取 Firebase 課程清單，請確認匿名登入與資料庫規則。';
+  }).catch((error) => {
+    console.error(error);
+    directoryStatus.textContent = error.message || 'Firebase 初始化失敗。';
   });
 }
 
-function renderFieldInputs() {
-  entryGrid.innerHTML = FIELD_KEYS.map((key) => `
-    <label>
-      <span>${key}${REQUIRED_FIELD_KEYS.includes(key) ? ' <b>*</b>' : ''}</span>
-      <input name="field_${key}" autocomplete="off" placeholder="entry.123456789">
-    </label>
-  `).join('');
-}
+async function createFirebaseClass(event) {
+  event.preventDefault();
+  const submitButton = form.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  statusText.textContent = '正在建立 Firebase 課程…';
 
-function loadSavedSetup() {
-  const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-  classId = saved.class_id || classId;
-  document.querySelector('#class-id').value = classId;
+  try {
+    await createClass(classId, teacherPin);
+    const values = { class_id: classId };
+    const hostUrl = buildPageUrl('host.html', values);
+    const studentUrl = buildPageUrl('play.html', values);
+    const statsUrl = buildPageUrl('stats.html', values);
 
-  for (const [key, value] of Object.entries(saved)) {
-    const input = form.elements.namedItem(key);
-    if (input) input.value = value;
+    hostLink.value = hostUrl;
+    playLink.value = studentUrl;
+    statsLink.value = statsUrl;
+    renderQr(qrCode, studentUrl, '學生作答 QR Code');
+    resultPanel.classList.remove('hidden');
+    expireNote.textContent = `本課程約於 ${new Date(Date.now() + CLASS_LIFETIME_MS).toLocaleString()} 到期`;
+    statusText.textContent = `課程已建立。教師密鑰：${teacherPin}（請妥善保存）`;
+  } catch (error) {
+    console.error(error);
+    statusText.textContent = error.message || '建立課程失敗，請確認 Firebase 設定。';
+  } finally {
+    submitButton.disabled = false;
   }
 }
 
-function generateLinks() {
-  const values = readFormValues();
-  const missing = [
-    ...['class_id', 'sheet_id', 'form_url'].filter((key) => !values[key]),
-    ...REQUIRED_FIELD_KEYS.map((key) => `field_${key}`).filter((key) => !values[key]),
-  ];
+function renderCredentials() {
+  classIdInput.value = classId;
+  teacherPinInput.value = teacherPin;
+  firebasePath.textContent = `classes/${classId}`;
+}
 
-  if (missing.length > 0) {
-    statusText.textContent = `設定不完整：${missing.join('、')}`;
+function setDirectoryOpen(open) {
+  directoryPanel.classList.toggle('hidden', !open);
+  directoryToggle.setAttribute('aria-expanded', String(open));
+  if (open) renderDirectory();
+}
+
+function renderDirectory() {
+  directoryList.replaceChildren();
+
+  if (latestClasses.length === 0) {
+    directoryStatus.textContent = '目前沒有課程。';
     return;
   }
 
-  const hostUrl = buildPageUrl('host.html', values);
-  const studentUrl = buildPageUrl('play.html', values);
-  const statsUrl = buildPageUrl('stats.html', values);
-  hostLink.value = hostUrl;
-  playLink.value = studentUrl;
-  statsLink.value = statsUrl;
-  renderQr(qrCode, studentUrl, '學生作答 QR Code');
-  resultPanel.classList.remove('hidden');
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
-  statusText.textContent = '連結已產生，設定也已儲存在這台電腦。';
-}
+  directoryStatus.textContent = `共 ${latestClasses.length} 個課程節點；此入口僅供除錯。`;
+  for (const item of latestClasses) {
+    const createdAt = Number(item.created_at);
+    const remaining = createdAt + CLASS_LIFETIME_MS - Date.now();
+    const li = document.createElement('li');
+    const id = document.createElement('strong');
+    const path = document.createElement('code');
+    const meta = document.createElement('span');
 
-function readFormValues() {
-  const formData = new FormData(form);
-  const values = {
-    class_id: clean(formData.get('class_id')) || classId,
-    sheet_id: clean(formData.get('sheet_id')),
-    sheet_name: clean(formData.get('sheet_name')) || DEFAULT_SHEET_NAME,
-    gid: clean(formData.get('gid')),
-    form_url: normalizeFormUrl(clean(formData.get('form_url'))),
-  };
-
-  for (const key of FIELD_KEYS) {
-    values[`field_${key}`] = clean(formData.get(`field_${key}`));
+    id.textContent = item.class_id;
+    path.textContent = `classes/${item.class_id}`;
+    meta.textContent = Number.isFinite(remaining)
+      ? (remaining > 0 ? `剩餘 ${formatRemainingTime(remaining)}` : '已到期，等待清除')
+      : '建立時間同步中';
+    li.append(id, path, meta);
+    directoryList.append(li);
   }
-
-  return values;
 }
 
-function parsePrefillUrl(rawUrl) {
-  const fields = {};
-  const missing = [];
-
-  try {
-    const url = new URL(clean(rawUrl));
-    const formUrl = normalizeFormUrl(`${url.origin}${url.pathname}`);
-
-    for (const [paramKey, paramValue] of url.searchParams.entries()) {
-      if (!paramKey.startsWith('entry.')) continue;
-      const matchedKey = FIELD_KEYS.find((key) => normalizeMarker(key) === normalizeMarker(paramValue));
-      if (matchedKey) fields[matchedKey] = paramKey;
-    }
-
-    for (const key of FIELD_KEYS) {
-      if (!fields[key]) missing.push(key);
-    }
-
-    return { fields, missing, formUrl };
-  } catch {
-    return { fields, missing: [...FIELD_KEYS], formUrl: '' };
+function cleanupExpiredClasses(classes) {
+  for (const item of classes) {
+    if (!isExpired(item.created_at) || attemptedExpiredCleanup.has(item.class_id)) continue;
+    attemptedExpiredCleanup.add(item.class_id);
+    deleteExpiredClass(item.class_id).catch((error) => {
+      console.error('清除過期課程失敗', item.class_id, error);
+      attemptedExpiredCleanup.delete(item.class_id);
+    });
   }
 }
 
@@ -155,6 +147,10 @@ async function copyGenerated(value, successMessage) {
   statusText.textContent = successMessage;
 }
 
-function normalizeMarker(value) {
-  return clean(value).toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
+function formatRemainingTime(milliseconds) {
+  const totalMinutes = Math.max(0, Math.ceil(milliseconds / 60000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  return `${days} 天 ${hours} 小時 ${minutes} 分`;
 }

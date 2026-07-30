@@ -9,6 +9,25 @@
   <body>
     <div id="config-error" class="error-panel hidden"></div>
 
+    <main id="teacher-login" class="teacher-login-shell hidden">
+      <section class="panel teacher-login-card">
+        <p class="eyebrow">ClassPop Host</p>
+        <h1>教師登入</h1>
+        <p>課堂 ID：<strong id="login-class-id"></strong></p>
+        <p class="helper-note">請輸入建立課程時產生的六位數教師密鑰。密鑰不會出現在主持頁網址。</p>
+        <form id="teacher-login-form">
+          <label>
+            <span>六位數教師密鑰</span>
+            <input id="teacher-pin-input" name="teacher_pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required>
+          </label>
+          <div class="actions">
+            <button class="primary-btn" type="submit">登入主持頁</button>
+            <span id="teacher-login-status" class="status-text"></span>
+          </div>
+        </form>
+      </section>
+    </main>
+
     <main id="host-app" class="shell host-shell hidden">
       <header class="topbar">
         <div>
@@ -17,7 +36,9 @@
           <p>課堂 ID：<strong id="class-id"></strong></p>
         </div>
         <div class="sync-tools">
+          <button id="sound-toggle" class="ghost-btn" type="button" aria-pressed="true">🔊 節拍開啟</button>
           <button id="manual-sync" class="ghost-btn" type="button">重新整理</button>
+          <button id="delete-class" class="danger-btn" type="button">刪除本課程</button>
           <span id="sync-status" class="status-text"></span>
         </div>
       </header>
@@ -50,13 +71,29 @@
               <label><span>C 選項</span><input name="option_c" required></label>
               <label><span>D 選項</span><input name="option_d" required></label>
             </div>
-            <fieldset class="answer-radios">
-              <legend>正確答案</legend>
-              <label><input type="radio" name="correct_answer" value="A" checked> A</label>
-              <label><input type="radio" name="correct_answer" value="B"> B</label>
-              <label><input type="radio" name="correct_answer" value="C"> C</label>
-              <label><input type="radio" name="correct_answer" value="D"> D</label>
-            </fieldset>
+            <div class="two-col compact-settings">
+              <fieldset class="answer-radios">
+                <legend>正確答案</legend>
+                <label><input type="radio" name="correct_answer" value="A" checked> A</label>
+                <label><input type="radio" name="correct_answer" value="B"> B</label>
+                <label><input type="radio" name="correct_answer" value="C"> C</label>
+                <label><input type="radio" name="correct_answer" value="D"> D</label>
+              </fieldset>
+              <label class="timer-setting">
+                <span>作答時間</span>
+                <select name="timer_seconds" id="timer-seconds">
+                  <option value="10">10 秒</option>
+                  <option value="15">15 秒</option>
+                  <option value="20">20 秒</option>
+                  <option value="30" selected>30 秒</option>
+                  <option value="45">45 秒</option>
+                  <option value="60">60 秒</option>
+                  <option value="90">90 秒</option>
+                  <option value="120">120 秒</option>
+                </select>
+                <small>倒數歸零時主持頁會自動關閉作答。</small>
+              </label>
+            </div>
             <div class="actions">
               <button class="primary-btn" type="submit">建立題目</button>
               <button id="open-question" class="ghost-btn" type="button">開放作答</button>
@@ -71,6 +108,11 @@
           <div class="status-line">
             <span id="question-status" class="status-pill">等待題目</span>
             <span>已作答 <strong id="answer-count">0</strong> 人</span>
+          </div>
+          <div id="host-countdown" class="countdown-widget host-countdown hidden" aria-live="polite">
+            <div class="countdown-label">作答倒數</div>
+            <div class="countdown-number" data-countdown-number>30</div>
+            <div class="countdown-progress"><span data-countdown-fill></span></div>
           </div>
           <h2 id="project-question">目前尚未建立題目</h2>
           <div id="option-list" class="option-list"></div>
