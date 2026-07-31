@@ -38,7 +38,7 @@ async function init() {
 
   try {
     unsubscribe = await subscribeToClassEvents(config, handleEvents, handleFirebaseError);
-    syncStatus.textContent = 'Firebase 即時同步已連線。';
+    syncStatus.textContent = '即時同步已連線。';
   } catch (error) {
     handleFirebaseError(error);
   }
@@ -71,8 +71,8 @@ function handleFirebaseError(error) {
   const permissionDenied = /permission_denied|permission denied/i.test(message);
   if (permissionDenied) deleteExpiredClass(config?.classId).catch(() => {});
   syncStatus.textContent = permissionDenied
-    ? '課程可能已超過 3 天到期，或 Firebase 權限設定尚未完成。'
-    : (message || 'Firebase 連線失敗。');
+    ? '課程可能已超過 3 天到期，或目前沒有存取權限。'
+    : (message || '連線失敗，請稍後再試。');
 }
 
 function renderSnapshot() {

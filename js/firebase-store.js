@@ -25,7 +25,7 @@ export async function ensureSignedIn() {
     anonymousSignInPromise = signInAnonymously(auth)
       .then((credential) => credential.user)
       .catch((error) => {
-        throw new Error('無法完成 Firebase 匿名登入，請確認 Authentication 已啟用「匿名」登入方式。', { cause: error });
+        throw new Error('目前無法連線到課程服務，請稍後再試。', { cause: error });
       })
       .finally(() => {
         anonymousSignInPromise = undefined;

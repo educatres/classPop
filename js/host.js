@@ -85,7 +85,7 @@ async function teacherLogin(event) {
     console.error(error);
     const message = String(error?.message || error || '');
     loginStatus.textContent = /permission_denied|permission denied/i.test(message)
-      ? '密鑰不正確。若剛更新程式，也請確認已重新部署 database.rules.json。'
+      ? '密鑰不正確，請確認後重新輸入。'
       : (message || '登入失敗。');
   } finally {
     button.disabled = false;
@@ -128,12 +128,12 @@ async function unlockHost() {
       updateHostCountdown();
     }, () => {});
   } catch (error) {
-    console.warn('無法取得 Firebase server time offset，改用裝置時間。', error);
+    console.warn('無法取得同步時間，改用裝置時間。', error);
   }
 
   try {
     unsubscribe = await subscribeToClassEvents(config, handleEvents, handleFirebaseError);
-    syncStatus.textContent = 'Firebase 即時同步已連線。';
+    syncStatus.textContent = '即時同步已連線。';
   } catch (error) {
     handleFirebaseError(error);
   }
@@ -233,9 +233,9 @@ function friendlyFirebaseError(error) {
   const message = String(error?.message || error || '');
   if (/permission_denied|permission denied/i.test(message)) {
     deleteExpiredClass(config?.classId).catch(() => {});
-    return '權限不足：課程可能已到期、教師登入已失效，或 Firebase 規則尚未更新。';
+    return '權限不足：課程可能已到期，或教師登入已失效。';
   }
-  return message || 'Firebase 連線失敗，請確認網路、匿名登入與資料庫設定。';
+  return message || '連線失敗，請確認網路後再試。';
 }
 
 function showAccessError(error) {
@@ -244,7 +244,7 @@ function showAccessError(error) {
   const message = String(error?.message || error || '');
   errorPanel.classList.remove('hidden');
   errorPanel.textContent = /permission_denied|permission denied/i.test(message)
-    ? '無法開啟此課程。課程可能已超過 3 天，或新版 Firebase 規則尚未部署。'
+    ? '無法開啟此課程。課程可能已超過 3 天，或目前沒有存取權限。'
     : (message || '無法讀取課程。');
 }
 

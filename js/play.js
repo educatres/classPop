@@ -47,12 +47,12 @@ async function init() {
       updateStudentCountdown();
     }, () => {});
   } catch (error) {
-    console.warn('無法取得 Firebase server time offset，改用裝置時間。', error);
+    console.warn('無法取得同步時間，改用裝置時間。', error);
   }
 
   try {
     unsubscribe = await subscribeToClassEvents(config, handleEvents, handleFirebaseError);
-    syncStatus.textContent = 'Firebase 即時同步已連線。';
+    syncStatus.textContent = '即時同步已連線。';
   } catch (error) {
     handleFirebaseError(error);
   }
@@ -81,8 +81,8 @@ function handleFirebaseError(error) {
   const permissionDenied = /permission_denied|permission denied/i.test(message);
   if (permissionDenied) deleteExpiredClass(config?.classId).catch(() => {});
   syncStatus.textContent = permissionDenied
-    ? '課程可能已超過 3 天到期，或 Firebase 權限設定尚未完成。'
-    : (message || 'Firebase 連線失敗。');
+    ? '課程可能已超過 3 天到期，或目前沒有存取權限。'
+    : (message || '連線失敗，請稍後再試。');
 }
 
 function renderSnapshot() {
@@ -125,7 +125,7 @@ function renderSnapshot() {
 
   renderQuestion(question, '');
   const pending = pendingAnswers.has(question.question_id);
-  renderMessage(pending ? '正在送出…' : '答案已鎖定 ✓', `你的答案：${escapeHtml(myAnswer)}<br>${pending ? '正在寫入 Firebase，請勿關閉頁面。' : '等待老師公布答案。'}`, true, 'result-pending');
+  renderMessage(pending ? '正在送出…' : '答案已鎖定 ✓', `你的答案：${escapeHtml(myAnswer)}<br>${pending ? '正在送出答案，請勿關閉頁面。' : '等待老師公布答案。'}`, true, 'result-pending');
   updateStudentCountdown();
 }
 

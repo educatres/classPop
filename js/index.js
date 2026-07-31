@@ -6,7 +6,6 @@ import { copyText } from './utils.js';
 const form = document.querySelector('#setup-form');
 const classIdInput = document.querySelector('#class-id');
 const teacherPinInput = document.querySelector('#teacher-pin');
-const firebasePath = document.querySelector('#firebase-path');
 const resultPanel = document.querySelector('#result-panel');
 const hostLink = document.querySelector('#host-link');
 const playLink = document.querySelector('#play-link');
@@ -20,8 +19,8 @@ const directoryClose = document.querySelector('#class-directory-close');
 const directoryStatus = document.querySelector('#class-directory-status');
 const directoryList = document.querySelector('#class-directory-list');
 
-let classId = generateClassId();
-let teacherPin = generateTeacherPin();
+const classId = generateClassId();
+const teacherPin = generateTeacherPin();
 let latestClasses = [];
 const attemptedExpiredCleanup = new Set();
 
@@ -29,14 +28,6 @@ init();
 
 function init() {
   renderCredentials();
-
-  document.querySelector('#reset-class-id').addEventListener('click', () => {
-    classId = generateClassId();
-    teacherPin = generateTeacherPin();
-    renderCredentials();
-    statusText.textContent = '已產生新的課程 ID 與教師密鑰。';
-    resultPanel.classList.add('hidden');
-  });
 
   document.querySelector('#copy-teacher-pin').addEventListener('click', async () => {
     await copyText(teacherPin);
@@ -56,10 +47,10 @@ function init() {
     cleanupExpiredClasses(classes);
   }, (error) => {
     console.error(error);
-    directoryStatus.textContent = '無法讀取 Firebase 課程清單，請確認匿名登入與資料庫規則。';
+    directoryStatus.textContent = '目前無法讀取課程清單，請稍後再試。';
   }).catch((error) => {
     console.error(error);
-    directoryStatus.textContent = error.message || 'Firebase 初始化失敗。';
+    directoryStatus.textContent = error.message || '課程服務初始化失敗。';
   });
 }
 
@@ -67,7 +58,7 @@ async function createFirebaseClass(event) {
   event.preventDefault();
   const submitButton = form.querySelector('button[type="submit"]');
   submitButton.disabled = true;
-  statusText.textContent = '正在建立 Firebase 課程…';
+  statusText.textContent = '正在建立課程…';
 
   try {
     await createClass(classId, teacherPin);
@@ -85,7 +76,7 @@ async function createFirebaseClass(event) {
     statusText.textContent = `課程已建立。教師密鑰：${teacherPin}（請妥善保存）`;
   } catch (error) {
     console.error(error);
-    statusText.textContent = error.message || '建立課程失敗，請確認 Firebase 設定。';
+    statusText.textContent = error.message || '建立課程失敗，請稍後再試。';
   } finally {
     submitButton.disabled = false;
   }
@@ -94,7 +85,6 @@ async function createFirebaseClass(event) {
 function renderCredentials() {
   classIdInput.value = classId;
   teacherPinInput.value = teacherPin;
-  firebasePath.textContent = `classes/${classId}`;
 }
 
 function setDirectoryOpen(open) {
@@ -117,15 +107,13 @@ function renderDirectory() {
     const remaining = createdAt + CLASS_LIFETIME_MS - Date.now();
     const li = document.createElement('li');
     const id = document.createElement('strong');
-    const path = document.createElement('code');
     const meta = document.createElement('span');
 
     id.textContent = item.class_id;
-    path.textContent = `classes/${item.class_id}`;
     meta.textContent = Number.isFinite(remaining)
       ? (remaining > 0 ? `剩餘 ${formatRemainingTime(remaining)}` : '已到期，等待清除')
       : '建立時間同步中';
-    li.append(id, path, meta);
+    li.append(id, meta);
     directoryList.append(li);
   }
 }
